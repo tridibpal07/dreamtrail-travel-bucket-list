@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<!--
+  =====================================================================
+  DreamTrail - Travel Bucket List & Global Dream Destination
+               Milestone Tracking System  (Version 2)
+  ---------------------------------------------------------------------
+  Course  : CSE326 - Internet Programming  |  Project  |  Section K4P26BP
+  Faculty : Vikas Sharma  |  Lovely Professional University
+  Group 5 : Tridib Pal (12622889), Naramala Rakesh (12611861),
+            Tharun Krishna M (12619838)
+  ---------------------------------------------------------------------
+  index.html = STRUCTURE of the page (HTML)
+  style.css  = LOOK of the page (colours, layout, animation)
+  script.js  = BRAIN of the page (data, live APIs, 3D globe, calculations)
+  =====================================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- viewport tag makes the site responsive on mobile phones -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="DreamTrail - explore the world on a 3D globe, plan trip budgets, check live weather and visa rules, and track your travel bucket list savings.">
+  <title>DreamTrail | Travel Bucket List & World Explorer</title>
+  <!-- Tab icon drawn inline (no extra file) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+
+  <!-- Google Font (Poppins) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Our own stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- ===================== 1. NAVIGATION BAR ===================== -->
+  <header class="navbar">
+    <!-- Brand logo: a globe with a dashed flight path, drawn with SVG code (no image file) -->
+    <a href="#home" class="logo" aria-label="DreamTrail home">
+      <svg class="logo-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <defs>
+          <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#FFB347"/><stop offset=".5" stop-color="#FF5E62"/><stop offset="1" stop-color="#8B5CF6"/>
+          </linearGradient>
+        </defs>
+        <circle cx="20" cy="21" r="14" fill="none" stroke="url(#brandGrad)" stroke-width="3"/>
+        <ellipse cx="20" cy="21" rx="6" ry="14" fill="none" stroke="url(#brandGrad)" stroke-width="1.8" opacity=".75"/>
+        <path d="M6 21h28" stroke="url(#brandGrad)" stroke-width="1.8" opacity=".75"/>
+        <path class="logo-path" d="M4 33 C 12 8, 28 4, 37 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="2.5 3.5"/>
+        <circle cx="37" cy="10" r="3" fill="#FFB347"/>
+      </svg>
+      <span class="logo-word">Dream<span>Trail</span></span>
+    </a>
+
+    <!-- Hamburger button: only visible on small screens -->
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
+
+    <nav class="nav-links" id="navLinks">
+      <a href="#explore">Explore</a>
+      <!-- Dropdown groups keep the menu short; every section is still one click away -->
+      <div class="nav-group">
+        <button type="button" class="nav-drop">Plan ▾</button>
+        <div class="nav-menu">
+          <a href="#planner">🧮 Trip Planner</a>
+          <a href="#balance">💳 Balance Bucket</a>
+          <a href="#dashboard">📊 Dashboard</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button type="button" class="nav-drop">My Trips ▾</button>
+        <div class="nav-menu">
+          <a href="#bucketlist">🧳 Bucket List</a>
+          <a href="#timeline">⏳ Timeline</a>
+          <a href="#passport">🛂 Passport</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button type="button" class="nav-drop">Memories ▾</button>
+        <div class="nav-menu">
+          <a href="#memories">📸 Memories</a>
+          <a href="#reviews">⭐ Reviews</a>
+        </div>
+      </div>
+      <a href="#tools">Tools</a>
+      <a href="#about">Team</a>
+      <button class="nav-ai" id="navAiBtn">🤖 Ask AI</button>
+      <!-- Sign up / profile button (text changes after login) -->
+      <button class="nav-user" id="authBtn">👤 Sign in</button>
+      <!-- Dark / Light theme switch -->
+      <button class="theme-btn" id="themeBtn" title="Change theme">🌙</button>
+    </nav>
+  </header>
+
+  <!-- ===================== 2. HERO SECTION ===================== -->
+  <section class="hero" id="home">
+    <!-- Background layers: parallax photo + moving aurora light blobs (pure CSS motion) -->
+    <div class="hero-bg" id="heroBg"></div>
+    <div class="aurora"><span></span><span></span><span></span></div>
+
+    <!-- Floating 3D glass cards (motion graphics) - filled with REAL live data by script.js -->
+    <div class="float-card fc1">🌦️ <b id="fcWeather">Paris …</b><small>Live weather now</small></div>
+    <div class="float-card fc2">🛂 <b>Visa-free</b><small>Thailand · Indian passport</small></div>
+    <div class="float-card fc3">💰 <b id="fcSaved">…</b><small>Your bucket list saved</small></div>
+    <div class="float-card fc4">🛫 <b id="fcDist">…</b><small id="fcDistText">to Paris</small></div>
+
+    <div class="hero-content">
+      <p class="hero-tag">✨ Travel dream board + live world tour guide</p>
+      <!-- Live date & time (updates every second) -->
+      <p class="now-bar"><span class="live-dot"></span><b id="nowClock">--</b> <span id="nowZone"></span></p>
+      <h1 class="hero-title"><span class="line">Dream it.</span> <span class="line grad">Save for it.</span> <span class="line grad2">Stamp it.</span></h1>
+      <p class="hero-text">
+        Click anywhere on our 3D Earth to see the best places, hotels, live weather, visa rules
+        and the full trip cost. Then save for your dream trip and collect a passport stamp
+        when you get there.
+      </p>
+
+      <!-- Search ANY place in the world (uses OpenStreetMap search) -->
+      <form class="hero-search" id="heroSearchForm">
+        <input type="text" id="heroSearch" placeholder="🔍 Search any city or place… e.g. Paris, Manali, Bali" autocomplete="off">
+        <button type="submit" class="btn btn-primary">Explore</button>
+      </form>
+      <div class="search-results" id="heroResults"></div>
+
+      <div class="hero-buttons">
+        <a href="#explore" class="btn btn-primary">🌍 Open 3D Globe</a>
+        <a href="#balance" class="btn btn-outline">💳 Where can I go with my money?</a>
+      </div>
+
+      <!-- Key numbers (count up when the page opens) -->
+      <div class="hero-stats">
+        <div><b data-count="195">0</b>+<span>countries to explore</span></div>
+        <div><b data-count="7">0</b><span>live real-data sources</span></div>
+        <div><b data-count="100">0</b>%<span>free · no login</span></div>
+      </div>
+
+      <!-- Rotating motivational travel quote (changed by JavaScript) -->
+      <div class="quote-box">
+        <p id="quoteText">"The world is a book, and those who do not travel read only one page."</p>
+        <small id="quoteAuthor">- Saint Augustine</small>
+      </div>
+    </div>
+
+    <a href="#mission" class="scroll-cue" aria-label="Scroll down"><span></span></a>
+  </section>
+
+  <!-- Moving strip of famous destinations (motion graphics, filled by JS) -->
+  <div class="marquee" aria-hidden="true"><div class="marquee-track" id="marquee"></div></div>
+
+  <!-- ===================== 2B. PROBLEM → SOLUTION (our allotted problem statement) ===================== -->
+  <section class="section" id="mission">
+    <h2 class="section-title">🎯 The Problem We Solve</h2>
+    <p class="section-sub">CSE326 Internet Programming Project · Travel Bucket List And Global Dream Destination Milestone Tracking System</p>
+
+    <div class="mission-grid">
+      <!-- Left: the official problem statement + pain points -->
+      <div class="panel problem-card">
+        <span class="tag tag-red">THE PROBLEM</span>
+        <blockquote>
+          “Travel enthusiasts dreaming of exploring global wonders (Taj Mahal, Eiffel Tower, Grand Canyon,
+          Northern Lights, Great Wall of China) lack a <b>visual, motivating bucket list board</b> to track
+          <b>dream destinations</b>, estimated <b>travel savings goals</b>, and <b>completed adventures</b>.”
+        </blockquote>
+        <div class="pain-grid">
+          <div><span>📝</span><b>Dreams stay on paper</b><small>No visual board, no progress</small></div>
+          <div><span>❓</span><b>No money plan</b><small>Real trip cost is unknown</small></div>
+          <div><span>🛂</span><b>Confusing paperwork</b><small>Passport &amp; visa steps unclear</small></div>
+          <div><span>😴</span><b>No motivation</b><small>Finished trips aren't celebrated</small></div>
+        </div>
+      </div>
+
+      <!-- Right: how DreamTrail solves each part -->
+      <div class="panel solution-card">
+        <span class="tag tag-green">OUR SOLUTION · DREAMTRAIL</span>
+        <h3>A dream board + a live world tour guide, in one website.</h3>
+        <ul class="solve-list">
+          <li><b>✅ Dream destination card creator</b>: name, country, target year, budget &amp; photo <a href="#bucketlist">Open →</a></li>
+          <li><b>✅ Continent filter</b>: Asia, Europe, Americas, Africa, Oceania <a href="#bucketlist">Open →</a></li>
+          <li><b>✅ Travel savings progress bar</b>: plus a "save ₹X per month" plan <a href="#bucketlist">Open →</a></li>
+          <li><b>✅ "Visited!" toggle + passport stamps</b>: with confetti <a href="#passport">Open →</a></li>
+        </ul>
+        <p class="beyond">Beyond the brief:</p>
+        <div class="chips-row">
+          <a href="#explore" class="mini-chip">🌍 3D satellite Earth</a>
+          <a href="#explore" class="mini-chip">🔴 Live weather · AQI · time</a>
+          <a href="#explore" class="mini-chip">🧭 Flight / train / bus / car</a>
+          <a href="#explore" class="mini-chip">🛂 Visa steps</a>
+          <a href="#planner" class="mini-chip">🧮 Budget planner</a>
+          <a href="#balance" class="mini-chip">💳 Balance bucket</a>
+          <a href="#timeline" class="mini-chip">⏳ Countdown timeline</a>
+          <a href="#tools" class="mini-chip">🎒 Packing &amp; currency</a>
+          <button type="button" class="mini-chip" onclick="openAI()">🤖 AI assistant</button>
+          <button type="button" class="mini-chip" onclick="openAuth()">👤 Accounts</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- How it works: 4 steps -->
+    <div class="flow">
+      <div><i>1</i><b>Explore</b><small>Click anywhere on Earth</small></div>
+      <div><i>2</i><b>Plan</b><small>Real distance, cost &amp; visa</small></div>
+      <div><i>3</i><b>Save</b><small>Track money &amp; countdown</small></div>
+      <div><i>4</i><b>Stamp</b><small>Visit &amp; collect stamps</small></div>
+    </div>
+  </section>
+
+  <!-- ===================== 3. 3D GLOBE EXPLORER + TOUR GUIDE ===================== -->
+  <section class="section wide" id="explore">
+    <h2 class="section-title">🌍 3D World Explorer & Tour Guide</h2>
+    <p class="section-sub">Drag to spin the Earth. Click <b>anywhere</b> (or an orange dot) to open a complete tour guide for that place.</p>
+
+    <!-- Toolbar above the globe -->
+    <div class="explore-bar">
+      <label class="home-label">🏠 Travelling from
+        <select id="homeSelect" aria-label="Home city"></select>
+      </label>
+      <form class="mini-search" id="exploreSearchForm">
+        <input type="text" id="exploreSearch" placeholder="Search a place…" autocomplete="off">
+        <button type="submit" class="btn btn-primary btn-sm">Go</button>
+      </form>
+      <div class="search-results" id="exploreResults"></div>
+    </div>
+
+    <!-- Quick buttons for famous destinations (filled by JS) -->
+    <div class="quick-cities" id="quickCities"></div>
+
+    <div class="explore-grid">
+      <!-- The globe is drawn inside this div by the globe.gl library -->
+      <div class="globe-wrap" data-lenis-prevent>
+        <div id="globe"></div>
+
+        <!-- Globe view modes: real satellite photos, NASA Blue Marble, city lights at night -->
+        <div class="globe-layers" id="globeLayers">
+          <button data-layer="satellite" class="active">🛰️ Satellite</button>
+          <button data-layer="marble">🌍 Blue Marble</button>
+          <button data-layer="night">🌃 Night</button>
+          <button id="worldBtn" title="Zoom out to the whole Earth">🌐 World</button>
+        </div>
+
+        <!-- Live GPS distance box -->
+        <div class="gps-box" id="gpsBox">
+          <button class="btn btn-primary btn-sm" id="gpsBtn">📡 Use my live location</button>
+          <div id="gpsText" class="gps-text">Turn on live location to see your real distance to any place.</div>
+        </div>
+
+        <div class="globe-hint" id="globeHint">🖱️ Drag to rotate · Scroll to zoom into real satellite photos · Click to explore</div>
+        <div class="globe-fallback" id="globeFallback">
+          <p>⚠️ The 3D globe needs an internet connection.</p>
+          <p>You can still use the search box or the city buttons above.</p>
+        </div>
+      </div>
+
+      <!-- Tour guide panel (filled by JS when a place is chosen) -->
+      <aside class="guide" id="guidePanel" data-lenis-prevent>
+        <div class="guide-empty">
+          <div class="big-emoji">🧭</div>
+          <h3>Pick a place to start</h3>
+          <p>Click on the globe, choose a city button or search. You will see:</p>
+          <ul>
+            <li>📍 Distance, travel time & total trip cost</li>
+            <li>🔴 Live weather, local time, air quality & currency</li>
+            <li>⭐ Best places nearby with ratings</li>
+            <li>🏨 Best areas to stay & hotels with prices</li>
+            <li>🛂 Passport & visa steps for Indians</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ===================== 4. DASHBOARD (STATISTICS) ===================== -->
+  <section class="section" id="dashboard">
+    <h2 class="section-title">📊 My Travel Dashboard</h2>
+    <p class="section-sub">All numbers update live whenever you add, save or visit.</p>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-icon">🗺️</span>
+        <h3 id="statTotal">0</h3>
+        <p>Dream Destinations</p>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">✅</span>
+        <h3 id="statVisited">0</h3>
+        <p>Places Visited</p>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">💰</span>
+        <h3 id="statSaved">₹0</h3>
+        <p>Total Money Saved</p>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">🎯</span>
+        <h3 id="statBudget">₹0</h3>
+        <p>Total Budget Needed</p>
+      </div>
+    </div>
+
+    <div class="overall-box">
+      <div class="overall-row">
+        <span>🌟 Bucket List Completion</span>
+        <strong id="completionText">0%</strong>
+      </div>
+      <div class="progress"><div class="progress-fill" id="completionBar"></div></div>
+
+      <div class="overall-row">
+        <span>💵 Overall Savings Progress</span>
+        <strong id="overallSaveText">0%</strong>
+      </div>
+      <div class="progress"><div class="progress-fill savings" id="overallSaveBar"></div></div>
+
+      <!-- Next trip countdown (real-time status) -->
+      <p class="next-trip" id="nextTrip">⏳ No trip date set yet. Add a travel date to start a countdown.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 5. TRIP BUDGET PLANNER ===================== -->
+  <section class="section" id="planner">
+    <h2 class="section-title">🧮 Trip Budget Planner</h2>
+    <p class="section-sub">Find the full cost of a trip (flights, hotel, food, transport, visa) plus a day-by-day plan.</p>
+
+    <div class="planner-grid">
+      <form class="panel" id="plannerForm">
+        <div class="form-row">
+          <label for="planDest">Destination</label>
+          <select id="planDest"></select>
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label for="planDays">Days</label>
+            <input type="number" id="planDays" min="1" max="60" value="5">
+          </div>
+          <div class="form-row">
+            <label for="planPeople">Travellers</label>
+            <input type="number" id="planPeople" min="1" max="20" value="2">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Travel style</label>
+          <div class="segmented" id="planStyle">
+            <button type="button" data-style="budget">🎒 Budget</button>
+            <button type="button" data-style="mid" class="active">🧳 Comfort</button>
+            <button type="button" data-style="luxury">💎 Luxury</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="planMonth">Travel month</label>
+          <select id="planMonth"></select>
+        </div>
+        <button type="submit" class="btn btn-primary full">Calculate Trip Cost</button>
+        <p class="note">Prices are smart estimates (2026, in ₹) based on distance and the country's cost of living. Always check live prices before booking.</p>
+      </form>
+
+      <!-- Result is written here by JavaScript -->
+      <div class="panel planner-result" id="planResult">
+        <p class="muted center">👈 Choose a destination and click <b>Calculate</b>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 6. BALANCE BUCKET ===================== -->
+  <section class="section" id="balance">
+    <h2 class="section-title">💳 Balance Bucket: Where Can I Go?</h2>
+    <p class="section-sub">Enter the money you have. We show every trip you can afford right now and what you still need for the rest.</p>
+
+    <form class="panel balance-form" id="balanceForm">
+      <div class="form-row">
+        <label for="balAmount">My balance (₹)</label>
+        <input type="number" id="balAmount" placeholder="e.g. 60000" value="60000" min="0">
+      </div>
+      <div class="form-row">
+        <label for="balDays">Days</label>
+        <input type="number" id="balDays" value="4" min="1" max="60">
+      </div>
+      <div class="form-row">
+        <label for="balPeople">Travellers</label>
+        <input type="number" id="balPeople" value="1" min="1" max="20">
+      </div>
+      <div class="form-row">
+        <label for="balStyle">Style</label>
+        <select id="balStyle">
+          <option value="budget">🎒 Budget</option>
+          <option value="mid">🧳 Comfort</option>
+          <option value="luxury">💎 Luxury</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="balScope">Show</label>
+        <select id="balScope">
+          <option value="all">🌐 All places</option>
+          <option value="india">🇮🇳 India only</option>
+          <option value="abroad">✈️ Abroad only</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Show my trips</button>
+    </form>
+
+    <div class="balance-summary" id="balSummary"></div>
+    <div class="balance-grid" id="balGrid"></div>
+    <div class="center mt"><button class="btn btn-outline-dark" id="balMore" type="button">Show all trips</button></div>
+  </section>
+
+  <!-- ===================== 7. BUCKET LIST (CARDS) ===================== -->
+  <section class="section" id="bucketlist">
+    <h2 class="section-title">🧳 My Dream Bucket List</h2>
+    <p class="section-sub">Track savings, trip status and live conditions for every dream destination.</p>
+
+    <!-- Toolbar: search + sort + add button -->
+    <div class="toolbar">
+      <input type="text" id="searchInput" placeholder="🔍 Search destination or country...">
+      <select id="sortSelect" aria-label="Sort destinations">
+        <option value="newest">Sort: Newest first</option>
+        <option value="year">Sort: Target year</option>
+        <option value="budget">Sort: Budget (low → high)</option>
+        <option value="progress">Sort: Savings progress</option>
+      </select>
+      <select id="statusSelect" aria-label="Filter by status">
+        <option value="all">Status: All</option>
+        <option value="dream">Status: Not visited yet</option>
+        <option value="visited">Status: Visited</option>
+      </select>
+      <button class="btn btn-primary" id="addBtn">+ Add Destination</button>
+    </div>
+
+    <!-- Continent filter buttons (required feature) -->
+    <div class="filters" id="continentFilters">
+      <button class="chip active" data-continent="All">🌐 All</button>
+      <button class="chip" data-continent="Asia">🏯 Asia</button>
+      <button class="chip" data-continent="Europe">🏰 Europe</button>
+      <button class="chip" data-continent="Americas">🗽 Americas</button>
+      <button class="chip" data-continent="Africa">🦁 Africa</button>
+      <button class="chip" data-continent="Oceania">🏝️ Oceania</button>
+    </div>
+
+    <!-- JavaScript puts the destination cards inside this div -->
+    <div class="cards-grid" id="cardsGrid"></div>
+
+    <div class="empty" id="emptyState">
+      <p>😕 No destinations found.</p>
+      <p>Try another filter or add a new dream destination!</p>
+    </div>
+  </section>
+
+  <!-- ===================== 7B. TRIP TIMELINE (PAST · NOW · FUTURE) ===================== -->
+  <section class="section" id="timeline">
+    <h2 class="section-title">⏳ My Trip Timeline</h2>
+    <p class="section-sub">Past adventures, trips happening now, and future trips with a live countdown and a prep checklist (passport, visa, tickets).</p>
+
+    <div class="timeline-grid">
+      <div class="tl-col">
+        <h3>📜 Past Visits</h3>
+        <div id="tlPast"></div>
+      </div>
+      <div class="tl-col now">
+        <h3><span class="live-dot"></span>Happening Now</h3>
+        <div id="tlNow"></div>
+      </div>
+      <div class="tl-col">
+        <h3>🚀 Future Trips</h3>
+        <div id="tlFuture"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 8. PASSPORT (STAMP COLLECTION) ===================== -->
+  <section class="section" id="passport">
+    <h2 class="section-title">🛂 My Travel Passport</h2>
+    <p class="section-sub">Every place you mark as <b>Visited!</b> gets a passport stamp here.</p>
+
+    <div class="passport-book">
+      <div class="passport-header">
+        <span>🌏 DREAMTRAIL PASSPORT</span>
+        <span id="stampCount">0 stamps</span>
+      </div>
+      <div class="stamps-grid" id="stampsGrid"></div>
+      <p class="empty-passport" id="emptyPassport">No stamps yet. Go explore the world! ✈️</p>
+    </div>
+  </section>
+
+  <!-- ===================== 9. TRAVEL TOOLS ===================== -->
+  <section class="section" id="tools">
+    <h2 class="section-title">🧰 Smart Travel Tools</h2>
+    <p class="section-sub">Live currency converter, a weather-based packing list and a document checklist.</p>
+
+    <div class="tools-grid">
+      <!-- Currency converter -->
+      <div class="panel">
+        <h3>💱 Live Currency Converter</h3>
+        <div class="form-grid">
+          <div class="form-row">
+            <label for="fxAmount">Amount</label>
+            <input type="number" id="fxAmount" value="10000" min="0">
+          </div>
+          <div class="form-row">
+            <label for="fxFrom">From</label>
+            <select id="fxFrom"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="fxTo">To</label>
+          <select id="fxTo"></select>
+        </div>
+        <div class="fx-result" id="fxResult">Loading live rates…</div>
+        <small class="muted" id="fxUpdated"></small>
+      </div>
+
+      <!-- Packing list -->
+      <div class="panel">
+        <h3>🎒 Smart Packing List</h3>
+        <div class="form-row">
+          <label for="packDest">Destination</label>
+          <select id="packDest"></select>
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label for="packDays">Days</label>
+            <input type="number" id="packDays" value="5" min="1" max="60">
+          </div>
+          <div class="form-row">
+            <label for="packType">Trip type</label>
+            <select id="packType">
+              <option value="city">🏙️ City</option>
+              <option value="beach">🏖️ Beach</option>
+              <option value="mountain">🏔️ Mountain</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary full" id="packBtn">Make list from live weather</button>
+        <div class="checklist" id="packList"></div>
+      </div>
+
+      <!-- Documents checklist -->
+      <div class="panel">
+        <h3>📑 Before-You-Fly Checklist</h3>
+        <div class="checklist" id="docList"></div>
+        <div class="progress mt"><div class="progress-fill savings" id="docBar"></div></div>
+        <small class="muted" id="docText"></small>
+      </div>
+
+      <!-- Live trip countdown -->
+      <div class="panel">
+        <h3>⏳ Trip Countdown</h3>
+        <div class="form-row">
+          <label for="cdDest">Trip</label>
+          <select id="cdDest"></select>
+        </div>
+        <div class="form-row">
+          <label for="cdDate">Travel date</label>
+          <input type="date" id="cdDate">
+        </div>
+        <button class="btn btn-primary full" id="cdBtn">Start countdown</button>
+        <div id="cdBox" class="mt"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 9B. TRAVEL MEMORIES (photo uploads) ===================== -->
+  <section class="section" id="memories">
+    <h2 class="section-title">📸 My Travel Memories</h2>
+    <p class="section-sub">Upload photos from your trips and write how it went. Your memory wall stays saved in your account.</p>
+
+    <div class="memory-layout">
+      <form class="panel" id="memForm" novalidate>
+        <h3>➕ Add a memory</h3>
+        <div class="form-row">
+          <label for="memPlace">Place</label>
+          <input type="text" id="memPlace" list="memPlaceList" placeholder="e.g. Taj Mahal">
+          <datalist id="memPlaceList"></datalist>
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label for="memDate">Date</label>
+            <input type="date" id="memDate">
+          </div>
+          <div class="form-row">
+            <label>Rating</label>
+            <div class="star-input" id="memStars"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="memText">Your story</label>
+          <textarea id="memText" rows="3" placeholder="What did you see, eat, feel?"></textarea>
+        </div>
+        <div class="form-row">
+          <label for="memPhotos">Photos (up to 4)</label>
+          <input type="file" id="memPhotos" accept="image/*" multiple>
+          <div class="mem-preview" id="memPreview"></div>
+        </div>
+        <small class="error" id="errMem"></small>
+        <button type="submit" class="btn btn-primary full">Save memory</button>
+      </form>
+      <div class="memory-wall" id="memWall"></div>
+    </div>
+  </section>
+
+  <!-- ===================== 9C. REVIEWS: OUR ESTIMATE vs YOUR REAL TRIP ===================== -->
+  <section class="section" id="reviews">
+    <h2 class="section-title">⭐ Trip Reviews &amp; Accuracy</h2>
+    <p class="section-sub">Back from a trip? Tell us what it really cost. We compare it with our estimate so everyone can see how accurate DreamTrail is.</p>
+
+    <div class="review-layout">
+      <form class="panel" id="revForm" novalidate>
+        <h3>📝 Review a trip</h3>
+        <div class="form-row">
+          <label for="revDest">Destination</label>
+          <select id="revDest"></select>
+        </div>
+        <div class="form-grid">
+          <div class="form-row"><label for="revDays">Days</label><input type="number" id="revDays" value="5" min="1"></div>
+          <div class="form-row"><label for="revPeople">Travellers</label><input type="number" id="revPeople" value="1" min="1"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label for="revStyle">Style</label>
+            <select id="revStyle"><option value="budget">🎒 Budget</option><option value="mid" selected>🧳 Comfort</option><option value="luxury">💎 Luxury</option></select>
+          </div>
+          <div class="form-row"><label for="revActual">Real total spent (₹)</label><input type="number" id="revActual" placeholder="e.g. 42000" min="1"></div>
+        </div>
+        <div class="form-row">
+          <label>How useful was DreamTrail?</label>
+          <div class="star-input" id="revStars"></div>
+        </div>
+        <div class="form-row">
+          <label for="revText">Comment</label>
+          <textarea id="revText" rows="2" placeholder="Tips for other travellers…"></textarea>
+        </div>
+        <small class="error" id="errRev"></small>
+        <button type="submit" class="btn btn-primary full">Submit review</button>
+      </form>
+      <div>
+        <div class="review-summary" id="revSummary"></div>
+        <div id="revList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 10. ABOUT SECTION ===================== -->
+  <section class="section" id="about">
+    <h2 class="section-title">👥 Team &amp; Technology</h2>
+    <p class="section-sub">CSE326 – Internet Programming Project · Group 5 · Section K4P26BP · Faculty: <b>Vikas Sharma</b> · Lovely Professional University</p>
+    <div class="about-grid">
+      <div class="about-card team-card">
+        <div class="avatar">T</div>
+        <h3>Tridib Pal</h3>
+        <small>HTML · PPT &amp; Presentation</small>
+        <ul class="member-meta"><li><span>Reg. No.</span>12622889</li><li><span>Roll No.</span>RK4P26BPA17</li><li><span>Group</span>5 · K4P26BP</li></ul>
+        <p>index.html: page structure, all sections, forms and popups. Made the PPT and leads the presentation and video.</p>
+      </div>
+      <div class="about-card team-card">
+        <div class="avatar">R</div>
+        <h3>Naramala Rakesh</h3>
+        <small>JavaScript</small>
+        <ul class="member-meta"><li><span>Reg. No.</span>12611861</li><li><span>Roll No.</span>RK4P26BPA15</li><li><span>Group</span>5 · K4P26BP</li></ul>
+        <p>script.js: data &amp; localStorage, live APIs, 3D globe, trip cost engine, AI assistant, accounts and testing.</p>
+      </div>
+      <div class="about-card team-card">
+        <div class="avatar">T</div>
+        <h3>Tharun Krishna M</h3>
+        <small>CSS</small>
+        <ul class="member-meta"><li><span>Reg. No.</span>12619838</li><li><span>Roll No.</span>RK4P26BPA16</li><li><span>Group</span>5 · K4P26BP</li></ul>
+        <p>style.css: premium design, glass cards, colours, animations, dark mode and mobile layout.</p>
+      </div>
+    </div>
+    <div class="about-grid tech-row">
+      <div class="about-card" style="grid-column: 1 / -1">
+        <h3>🛠️ Technology</h3>
+        <p>HTML5, CSS3 and JavaScript only (no backend). The 3D Earth uses globe.gl with real
+           Esri satellite imagery and NASA Blue Marble. Free live APIs: Open-Meteo for weather and
+           air quality, OpenStreetMap for maps and hotels, OSRM for road routes, Wikipedia for places
+           and ExchangeRate-API for currency. Your data stays in <b>localStorage</b>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 11. FOOTER ===================== -->
+  <footer class="footer">
+    <p class="footer-brand">Dream<span>Trail</span></p>
+    <p>Dream it. Save for it. Stamp it. · CSE326 Internet Programming Project · Section K4P26BP · Faculty: Vikas Sharma · LPU</p>
+    <p>Made by Tridib Pal (12622889) · Naramala Rakesh (12611861) · Tharun Krishna M (12619838)</p>
+    <p class="credits">Imagery: Esri World Imagery (Esri, Maxar, Earthstar Geographics) · NASA Blue Marble · Data: © OpenStreetMap contributors · OSRM · Open-Meteo · Wikipedia · ExchangeRate-API · Flags: flagcdn.com. Costs are estimates for planning only.</p>
+    <button class="btn btn-small" id="resetBtn">↺ Reset to sample data</button>
+  </footer>
+
+  <!-- ===================== POPUP: ADD / EDIT DESTINATION ===================== -->
+  <div class="modal" id="formModal" data-lenis-prevent>
+    <div class="modal-box">
+      <button class="close-btn" id="closeModal" aria-label="Close">✖</button>
+      <h2 id="formTitle">🌍 Add Dream Destination</h2>
+
+      <form id="destForm" novalidate>
+        <!-- Hidden fields: id when EDITING, and map coordinates if known -->
+        <input type="hidden" id="destId">
+        <input type="hidden" id="destLat">
+        <input type="hidden" id="destLng">
+        <input type="hidden" id="destCc">
+
+        <div class="form-row">
+          <label for="destName">Destination Name *</label>
+          <input type="text" id="destName" placeholder="e.g. Taj Mahal">
+          <small class="error" id="errName"></small>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-row">
+            <label for="destCountry">Country *</label>
+            <input type="text" id="destCountry" placeholder="e.g. India">
+            <small class="error" id="errCountry"></small>
+          </div>
+          <div class="form-row">
+            <label for="destContinent">Continent *</label>
+            <select id="destContinent">
+              <option value="">-- Select --</option>
+              <option>Asia</option>
+              <option>Europe</option>
+              <option>Americas</option>
+              <option>Africa</option>
+              <option>Oceania</option>
+            </select>
+            <small class="error" id="errContinent"></small>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-row">
+            <label for="destYear">Target Travel Year *</label>
+            <input type="number" id="destYear" placeholder="e.g. 2028">
+            <small class="error" id="errYear"></small>
+          </div>
+          <div class="form-row">
+            <label for="destDate">Travel date (optional)</label>
+            <input type="date" id="destDate">
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-row">
+            <label for="destBudget">Estimated Budget (₹) *</label>
+            <input type="number" id="destBudget" placeholder="e.g. 150000">
+            <small class="error" id="errBudget"></small>
+          </div>
+          <div class="form-row">
+            <label for="destSaved">Money Already Saved (₹)</label>
+            <input type="number" id="destSaved" placeholder="e.g. 20000" value="0">
+            <small class="error" id="errSaved"></small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label for="destPhoto">Photo URL (optional)</label>
+          <input type="url" id="destPhoto" placeholder="https://... (link to an image)">
+          <div class="photo-preview" id="photoPreview">🖼️ Photo preview</div>
+        </div>
+
+        <div class="form-row">
+          <label for="destNote">Why do you want to go? (optional)</label>
+          <textarea id="destNote" rows="2" placeholder="e.g. To see the sunrise over the marble dome"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary full" id="submitBtn">Save Destination</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================== POPUP: ADD SAVINGS ===================== -->
+  <div class="modal" id="saveModal" data-lenis-prevent>
+    <div class="modal-box small">
+      <button class="close-btn" id="closeSave" aria-label="Close">✖</button>
+      <h2>💰 Add Savings</h2>
+      <p id="saveForName" class="muted"></p>
+      <input type="number" id="saveAmount" placeholder="Amount in ₹ (e.g. 5000)">
+      <div class="quick-amounts">
+        <button type="button" data-amt="500">+₹500</button>
+        <button type="button" data-amt="1000">+₹1,000</button>
+        <button type="button" data-amt="5000">+₹5,000</button>
+        <button type="button" data-amt="10000">+₹10,000</button>
+      </div>
+      <small class="error" id="errSave"></small>
+      <button class="btn btn-primary full" id="confirmSave">Add to Savings</button>
+    </div>
+  </div>
+
+  <!-- ===================== POPUP: LIVE STATUS ===================== -->
+  <div class="modal" id="liveModal" data-lenis-prevent>
+    <div class="modal-box">
+      <button class="close-btn" id="closeLive" aria-label="Close">✖</button>
+      <div id="liveContent"></div>
+    </div>
+  </div>
+
+  <!-- ===================== POPUP: SIGN UP / LOG IN / PROFILE ===================== -->
+  <div class="modal" id="authModal" data-lenis-prevent>
+    <div class="modal-box small">
+      <button class="close-btn" id="closeAuth" aria-label="Close">✖</button>
+
+      <!-- Shown when nobody is logged in -->
+      <div id="authForms">
+        <h2>✈️ Welcome to DreamTrail</h2>
+        <p class="muted">Create a free account so your bucket list, savings and checklists are saved under your name.</p>
+        <div class="segmented mt" id="authTabs">
+          <button type="button" data-mode="signup" class="active">Sign up</button>
+          <button type="button" data-mode="login">Log in</button>
+        </div>
+
+        <form id="authForm" class="mt" novalidate>
+          <div class="form-row" id="rowName">
+            <label for="authName">Full name</label>
+            <input type="text" id="authName" placeholder="e.g. Tridib Pal" autocomplete="name">
+          </div>
+          <div class="form-row">
+            <label for="authEmail">Email</label>
+            <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email">
+          </div>
+          <div class="form-row">
+            <label for="authPass">Password (min 6 characters)</label>
+            <input type="password" id="authPass" placeholder="••••••" autocomplete="new-password">
+          </div>
+          <small class="error" id="errAuth"></small>
+          <button type="submit" class="btn btn-primary full" id="authSubmit">Create account</button>
+        </form>
+        <p class="note">🔒 Your password is stored as a secure SHA-256 hash (never as plain text). Data is saved in this browser on this device. Use <b>Backup</b> to move it to another device.</p>
+      </div>
+
+      <!-- Shown when someone is logged in -->
+      <div id="authProfile" style="display:none">
+        <div class="profile-head">
+          <div class="avatar" id="profAvatar">T</div>
+          <div><h2 id="profName">Name</h2><p class="muted" id="profEmail"></p><p id="profBioText"></p></div>
+        </div>
+        <div class="info-grid mt" id="profStats"></div>
+
+        <!-- Edit profile -->
+        <details class="mt" id="profEdit">
+          <summary><b>✏️ Edit profile</b></summary>
+          <form id="profForm" class="mt" novalidate>
+            <div class="form-row">
+              <label for="profPhoto">Profile photo</label>
+              <input type="file" id="profPhoto" accept="image/*">
+            </div>
+            <div class="form-row"><label for="profNameIn">Full name</label><input type="text" id="profNameIn"></div>
+            <div class="form-row"><label for="profBio">Bio</label><textarea id="profBio" rows="2" placeholder="e.g. B.Tech CSE student who loves mountains"></textarea></div>
+            <div class="form-grid">
+              <div class="form-row"><label for="profPhone">Phone (optional)</label><input type="tel" id="profPhone" placeholder="+91…"></div>
+              <div class="form-row"><label for="profHome">Home city</label><select id="profHome"></select></div>
+            </div>
+            <button type="submit" class="btn btn-primary full">Save profile</button>
+          </form>
+        </details>
+        <div class="link-btns mt">
+          <button class="btn btn-primary btn-sm" id="backupBtn">⬇️ Backup my data</button>
+          <label class="btn btn-sm btn-outline-dark" for="restoreFile">⬆️ Restore backup</label>
+          <input type="file" id="restoreFile" accept="application/json" hidden>
+          <button class="btn btn-sm btn-outline-dark" id="logoutBtn">🚪 Log out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== AI TRAVEL ASSISTANT (chat widget) ===================== -->
+  <button class="ai-fab" id="aiFab" aria-label="Open AI travel assistant">🤖</button>
+  <div class="ai-chat" id="aiChat">
+    <div class="ai-head">
+      <div>
+        <b>🤖 DreamTrail AI Assistant</b>
+        <small>Answers from live data: weather, maps, Wikipedia, rates</small>
+      </div>
+      <div class="ai-head-btns">
+        <!-- Voice call: talk to the assistant hands-free (Web Speech API) -->
+        <button type="button" class="ai-call" id="aiCallBtn" title="Voice call">📞</button>
+        <button class="close-btn" id="aiClose" aria-label="Close">✖</button>
+      </div>
+    </div>
+    <div class="ai-messages" id="aiMessages" data-lenis-prevent></div>
+    <div class="ai-voice" id="aiVoice"></div>
+    <div class="ai-suggest" id="aiSuggest"></div>
+    <form class="ai-input" id="aiForm">
+      <button type="button" class="ai-mic" id="aiMicBtn" title="Speak your question">🎤</button>
+      <input type="text" id="aiText" placeholder="Ask anything… e.g. 'Who built the Taj Mahal?'" autocomplete="off">
+      <button type="submit" class="btn btn-primary btn-sm">Send</button>
+    </form>
+  </div>
+
+  <!-- Small notification message (toast) -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Canvas used for the confetti celebration animation -->
+  <canvas id="confetti"></canvas>
+
+  <!-- Lenis: Apple-style smooth scrolling (small library from a CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.4/dist/lenis.min.js"></script>
+  <!-- globe.gl library (3D Earth, built on three.js) from a CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.46.2/dist/globe.gl.min.js"></script>
+  <!-- Our JavaScript file (loaded at the end so the HTML is ready first) -->
+  <script src="script.js"></script>
+</body>
+</html>
