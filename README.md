@@ -56,6 +56,15 @@ and collect a passport stamp when you visit.
 - 🎒 Weather-based packing list · 💱 live currency converter · 📑 documents checklist
 - ✨ Premium design: glassmorphism, 3D motion, Apple-style smooth scrolling, dark/light mode, fully responsive
 
+## 🎬 Video, Presentation & Files
+
+| | Link |
+|---|---|
+| 🎥 Video walkthrough (4K 60fps) | [Watch on Google Drive](https://drive.google.com/file/d/10_FAxwANWfH0ZF3CXeBaqo8ozrhXvSA1/view?usp=sharing) |
+| 🎥 Video walkthrough (1080p) | [Watch on Google Drive](https://drive.google.com/file/d/1IcTBN6kKjMsFVgEEwtDPrnoYe0Z_J5ts/view?usp=sharing) |
+| 📊 Presentation (PPTX) | [Open on Google Drive](https://drive.google.com/file/d/1xrFYQuIdddjFMSxltGlVDdyF0asqVG5u/view?usp=sharing) · also in [`docs/`](docs/) |
+| 📁 All project files | [Google Drive folder](https://drive.google.com/drive/folders/1lIivImGBe8U5c5mBi8h1S74hxB3yPo9q?usp=sharing) |
+
 ## 🖼️ Screenshots
 
 | 3D Explorer (real satellite + photo pins) | Live data |
