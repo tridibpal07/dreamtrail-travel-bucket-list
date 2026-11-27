@@ -463,10 +463,47 @@ const toast = $("toast");
 function dataKey() { return currentUser ? STORAGE_KEY + ":" + currentUser.email : STORAGE_KEY; }
 function settingsKey() { return currentUser ? SETTINGS_KEY + ":" + currentUser.email : SETTINGS_KEY; }
 
+// Clean every destination that comes from storage or a backup file: known fields only,
+// correct types, safe photo URLs. This blocks script injection through crafted data.
+function sanitizeDestinations(list) {
+  if (!Array.isArray(list)) return [];
+  const str = (v, n) => String(v ?? "").slice(0, n);
+  const num = (v, lo, hi, def = 0) => { const x = Number(v); return Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : def; };
+  const okStatus = new Set(STATUSES.map(s => s.id));
+  const okDate = v => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? String(v) : "");
+  const okPhoto = v => {
+    v = String(v || "");
+    return /^https:\/\/[^\s"'<>]+$/i.test(v) || /^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(v) ? v.slice(0, 1500000) : "";
+  };
+  const seen = new Set(); let next = 1;
+  return list.slice(0, 500).filter(d => d && typeof d === "object").map(d => {
+    let id = Math.floor(num(d.id, 1, 1e13, 0));
+    while (!id || seen.has(id)) id = Date.now() + next++;
+    seen.add(id);
+    const prep = {};
+    if (d.prep && typeof d.prep === "object")
+      Object.keys(d.prep).slice(0, 50).forEach(k => { if (/^[\w-]{1,40}$/.test(k)) prep[k] = !!d.prep[k]; });
+    const lat = Number(d.lat), lng = Number(d.lng);
+    const out = {
+      id, name: str(d.name, 80) || "Untitled", country: str(d.country, 60),
+      cc: /^[A-Za-z]{2}$/.test(d.cc || "") ? d.cc.toUpperCase() : "",
+      continent: str(d.continent, 20),
+      lat: d.lat !== null && d.lat !== undefined && d.lat !== "" && Number.isFinite(lat) && Math.abs(lat) <= 90 ? lat : null,
+      lng: d.lng !== null && d.lng !== undefined && d.lng !== "" && Number.isFinite(lng) && Math.abs(lng) <= 180 ? lng : null,
+      year: Math.floor(num(d.year, 1900, 2200, new Date().getFullYear())), travelDate: okDate(d.travelDate),
+      budget: num(d.budget, 0, 1e9), saved: num(d.saved, 0, 1e9),
+      status: okStatus.has(d.status) ? d.status : (d.visited ? "visited" : "dream"),
+      photo: okPhoto(d.photo), note: str(d.note, 300), visited: !!d.visited, visitedOn: okDate(d.visitedOn), prep
+    };
+    if (d.visitedDate && !out.visitedOn) out.visitedDate = str(d.visitedDate, 40);
+    return out;
+  });
+}
+
 function loadData() {
   try {
     const stored = localStorage.getItem(dataKey());
-    destinations = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(SAMPLE_DATA));
+    destinations = sanitizeDestinations(stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(SAMPLE_DATA)));
   } catch (e) {
     destinations = JSON.parse(JSON.stringify(SAMPLE_DATA));
   }
@@ -3044,17 +3081,41 @@ function getUsers() {
 }
 
 // Turn "password + salt" into a SHA-256 hash (hex text) using the browser's Web Crypto API
-async function hashPassword(password, salt) {
-  const bytes = new TextEncoder().encode(salt + ":" + password);
-  if (window.crypto && crypto.subtle) {
-    const digest = await crypto.subtle.digest("SHA-256", bytes);
-    return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
-  }
-  // fallback (very old browsers): simple non-crypto hash
-  let h = 0;
-  for (const b of bytes) h = (h * 31 + b) >>> 0;
-  return "x" + h.toString(16);
+// Passwords are never stored. We store a salted PBKDF2-SHA-256 hash (210,000 rounds),
+// the browser-native key-derivation standard recommended by OWASP.
+const PBKDF2_ROUNDS = 210000;
+function randomSalt() {
+  const b = new Uint8Array(16); crypto.getRandomValues(b);
+  return [...b].map(x => x.toString(16).padStart(2, "0")).join("");
 }
+async function hashPassword(password, salt, rounds = PBKDF2_ROUNDS) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: enc.encode(salt), iterations: rounds }, key, 256);
+  return "pbkdf2$" + rounds + "$" + [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+// Accounts made before the upgrade used one SHA-256 round; still accepted once, then upgraded.
+async function legacyHash(password, salt) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + ":" + password));
+  return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+function safeEqual(a, b) {               // compare without leaking where they differ
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  let r = 0; for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i); return r === 0;
+}
+async function verifyPassword(user, password) {
+  if (typeof user.hash === "string" && user.hash.startsWith("pbkdf2$")) {
+    const rounds = parseInt(user.hash.split("$")[1], 10) || PBKDF2_ROUNDS;
+    return { ok: safeEqual(await hashPassword(password, user.salt, rounds), user.hash), upgrade: false };
+  }
+  return { ok: safeEqual(await legacyHash(password, user.salt), user.hash), upgrade: true };
+}
+// Slow down password guessing: after 5 wrong tries the form locks (30 s, doubling each time).
+function lockInfo(email) {
+  try { return JSON.parse(localStorage.getItem("dreamtrail-lock:" + email)) || { fails: 0, until: 0 }; }
+  catch (e) { return { fails: 0, until: 0 }; }
+}
+function setLock(email, info) { localStorage.setItem("dreamtrail-lock:" + email, JSON.stringify(info)); }
 
 function openAuth() {
   $("navLinks").classList.remove("open");
@@ -3082,13 +3143,16 @@ async function handleAuth(event) {
   const err = $("errAuth");
   if (authMode === "signup" && name.length < 2) return (err.textContent = "Please enter your name.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return (err.textContent = "Please enter a valid email address.");
-  if (pass.length < 6) return (err.textContent = "Password must be at least 6 characters.");
+  if (pass.length < 8 || !/[A-Za-z]/.test(pass) || !/\d/.test(pass))
+    return (err.textContent = "Password must be at least 8 characters with a letter and a number.");
+  if (pass.length > 128) return (err.textContent = "Password is too long.");
+  if (!window.crypto || !crypto.subtle) return (err.textContent = "Please open the site over HTTPS in a modern browser to use accounts.");
 
   const users = getUsers();
   if (authMode === "signup") {
     if (users[email]) return (err.textContent = "This email already has an account. Please log in.");
-    const salt = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    users[email] = { name, email, salt, hash: await hashPassword(pass, salt), created: todayISO() };
+    const salt = randomSalt();
+    users[email] = { name: name.slice(0, 60), email, salt, hash: await hashPassword(pass, salt), created: todayISO() };
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
     // first sign-up: keep the guest's current bucket list under the new account
     localStorage.setItem(STORAGE_KEY + ":" + email, JSON.stringify(destinations));
@@ -3096,7 +3160,20 @@ async function handleAuth(event) {
     showToast("🎉 Account created. Welcome, " + name + "!");
   } else {
     const u = users[email];
-    if (!u || (await hashPassword(pass, u.salt)) !== u.hash) return (err.textContent = "Wrong email or password.");
+    const lock = lockInfo(email);
+    if (lock.until > Date.now()) return (err.textContent = `Too many wrong tries. Try again in ${Math.ceil((lock.until - Date.now()) / 1000)} s.`);
+    const check = u ? await verifyPassword(u, pass) : { ok: false };
+    if (!check.ok) {
+      lock.fails += 1;
+      if (lock.fails >= 5) lock.until = Date.now() + 30000 * 2 ** Math.min(lock.fails - 5, 6);
+      setLock(email, lock);
+      return (err.textContent = "Wrong email or password.");
+    }
+    setLock(email, { fails: 0, until: 0 });
+    if (check.upgrade) {                       // move old accounts to the stronger hash
+      u.salt = randomSalt(); u.hash = await hashPassword(pass, u.salt);
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
     showToast("👋 Welcome back, " + u.name + "!");
   }
   localStorage.setItem(SESSION_KEY, email);
@@ -3170,8 +3247,11 @@ function restoreData(event) {
     try {
       const data = JSON.parse(reader.result);
       if (data.app !== "DreamTrail" || !Array.isArray(data.destinations)) throw new Error("bad file");
-      destinations = data.destinations;
-      settings = Object.assign(settings, data.settings || {});
+      if (f.size > 8 * 1024 * 1024) throw new Error("too big");
+      destinations = sanitizeDestinations(data.destinations);
+      const st = data.settings && typeof data.settings === "object" ? data.settings : {};
+      if (typeof st.home === "string" && /^[\w:-]{1,40}$/.test(st.home)) settings.home = st.home;
+      if (st.theme === "dark" || st.theme === "light") settings.theme = st.theme;
       saveData();
       saveSettings();
       renderAll();
@@ -3216,7 +3296,7 @@ function setAvatar(el, photo, name) {
 function updateNavAvatar() {
   const u = currentUser && getUsers()[currentUser.email];
   $("authBtn").innerHTML = currentUser
-    ? (u && u.photo ? `<img class="nav-avatar" src="${u.photo}" alt="">` : "👤 ") + escapeHTML(currentUser.name.split(" ")[0])
+    ? (u && u.photo ? `<img class="nav-avatar" src="${escapeHTML(u.photo)}" alt="">` : "👤 ") + escapeHTML(currentUser.name.split(" ")[0])
     : "👤 Sign in";
 }
 

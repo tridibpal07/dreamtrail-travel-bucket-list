@@ -30,7 +30,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
 
   <!-- Our own stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261127">
 </head>
 
 <body>
@@ -812,13 +812,13 @@
             <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email">
           </div>
           <div class="form-row">
-            <label for="authPass">Password (min 6 characters)</label>
-            <input type="password" id="authPass" placeholder="••••••" autocomplete="new-password">
+            <label for="authPass">Password (min 8 characters, a letter and a number)</label>
+            <input type="password" id="authPass" placeholder="••••••••" autocomplete="current-password" maxlength="128">
           </div>
           <small class="error" id="errAuth"></small>
           <button type="submit" class="btn btn-primary full" id="authSubmit">Create account</button>
         </form>
-        <p class="note">🔒 Your password is stored as a secure SHA-256 hash (never as plain text). Data is saved in this browser on this device. Use <b>Backup</b> to move it to another device.</p>
+        <p class="note">🔒 Your password is protected with a salted PBKDF2-SHA-256 hash (210,000 rounds, never stored as plain text). Data is saved in this browser on this device. Use <b>Backup</b> to move it to another device.</p>
       </div>
 
       <!-- Shown when someone is logged in -->
@@ -891,6 +891,6 @@
   <!-- globe.gl library (3D Earth, built on three.js) from a CDN -->
   <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.46.2/dist/globe.gl.min.js"></script>
   <!-- Our JavaScript file (loaded at the end so the HTML is ready first) -->
-  <script src="script.js"></script>
+  <script src="script.js?v=20261127"></script>
 </body>
 </html>

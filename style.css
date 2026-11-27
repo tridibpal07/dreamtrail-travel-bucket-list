@@ -2608,3 +2608,49 @@ body:not(.dark) .nav-menu { background: rgba(255, 255, 255, 0.98); }
   .nav-links .nav-ai, .nav-links .nav-user { margin-top: 10px; width: 100%; padding: 11px; }
   .nav-links .theme-btn { align-self: flex-start; margin-top: 6px; }
 }
+
+/* =====================================================================
+   OVERLAY READABILITY FIX
+   Pop-ups, chat, menus and dropdowns sit on top of busy content, so they
+   get a SOLID surface (not see-through glass) + a dimmed, blurred backdrop.
+   ===================================================================== */
+:root      { --surface: #ffffff; --surface-2: #f1f4fa; --surface-border: #dfe3ec; }
+body.dark  { --surface: #121729; --surface-2: #1b2238; --surface-border: rgba(255, 255, 255, 0.14); }
+
+.modal {
+  background: rgba(3, 6, 16, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.modal-box,
+.ai-chat {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+}
+.modal-box label, .modal-box p, .modal-box small, .modal-box h2, .modal-box h3 { color: var(--text); }
+.modal-box .muted, .modal-box small { color: var(--muted); }
+.modal input, .modal select, .modal textarea,
+.ai-input input, .ai-input textarea {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--surface-border);
+}
+.modal input::placeholder, .modal textarea::placeholder, .ai-input input::placeholder { color: var(--muted); opacity: 1; }
+.msg.bot { background: var(--surface-2); color: var(--text); border: 1px solid var(--surface-border); }
+.ai-input { background: var(--surface); border-top: 1px solid var(--surface-border); }
+.ai-suggest { background: var(--surface); }
+.ai-suggest button { background: var(--surface-2); color: var(--text); border: 1px solid var(--surface-border); }
+.search-results, .search-results button { background: var(--surface); color: var(--text); }
+.search-results button:hover { background: var(--surface-2); }
+.nav-menu { background: var(--surface); }
+body:not(.dark) .nav-menu a, body:not(.dark) .nav-menu button { color: var(--text); }
+@media (max-width: 900px) {
+  .nav-links, .nav-links.open {
+    background: var(--surface) !important;
+    border: 1px solid var(--surface-border);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  }
+}
+.toast { background: #111827; color: #fff; border: 1px solid rgba(255, 255, 255, 0.12); }
